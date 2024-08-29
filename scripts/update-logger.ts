@@ -9,7 +9,7 @@ const LOGGER = "@ubiquity-dao/ubiquibot-logger";
 async function updateLogger() {
   const packageFile = "package.json";
   const packageJson = JSON.parse(fs.readFileSync(packageFile, "utf-8"));
-  const currentVersion = packageJson.dependencies[LOGGER] || packageJson.devDependencies[LOGGER];
+  const currentVersion = packageJson.dependencies[LOGGER]
 
   if (!currentVersion) {
     console.error(`Package ${LOGGER} is not listed in dependencies.`);
@@ -64,12 +64,35 @@ async function updateLogger() {
   await writeFile("src/logger-version.ts", code);
 
   if (shouldUpdate) {
-    yarnInstall();
+    handleInstall();
   }
 }
 
-async function yarnInstall() {
-  exec("yarn install");
+async function handleInstall() {
+  let manager = "yarn";
+
+  // find any lockfile
+  if (fs.existsSync("yarn.lock")) {
+    manager = "yarn";
+  } else if (fs.existsSync("package-lock.json")) {
+    manager = "npm";
+  } else if (fs.existsSync("pnpm-lock.yaml")) {
+    manager = "pnpm";
+  } else if (fs.existsSync("bun.lockb")) {
+    manager = "bun";
+  }
+
+  if (manager === "yarn") {
+    exec("yarn install");
+  } else if (manager === "npm") {
+    exec("npm install");
+  } else if (manager === "pnpm") {
+    exec("pnpm install");
+  } else if (manager === "bun") {
+    exec("bun install");
+  } else {
+    console.error("No lockfile found. Please run `yarn install` or `npm install`.");
+  }
 }
 
 updateLogger().catch(console.error);
