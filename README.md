@@ -1,70 +1,29 @@
-# `@ubiquity/ts-template`
+# `@ubiquity-os/kernel-logger`
 
-This template repository includes support for the following:
+This package is an extension of `@ubiquity-dao/ubiquibot-logger` which adds built-in support for Supabase and telegram logging.
 
-- TypeScript
-- Environment Variables
-- Conventional Commits
-- Automatic deployment to Cloudflare Pages
-
-## Testing
-
-### Cypress
-
-To test with Cypress Studio UI, run
-
-```shell
-yarn cy:open
-```
-
-Otherwise, to simply run the tests through the console, run
-
-```shell
-yarn cy:run
-```
-
-### Jest
-
-To start Jest tests, run
-
-```shell
-yarn test
-```
-
-## Sync any repository to latest `ts-template`
-
-A bash function that can do this for you:
+## Installation
 
 ```bash
-sync-branch-to-template() {
-  local branch_name
-  branch_name=$(git rev-parse --abbrev-ref HEAD)
-  local original_remote
-  original_remote=$(git remote show | head -n 1)
+npm install @ubiquity-os/kernel-logger
+```
 
-  # Add the template remote
-  git remote add template https://github.com/ubiquity/ts-template
+## Usage
 
-  # Fetch from the template remote
-  git fetch template development
+```typescript
+import { Logs } from "@ubiquity-os/kernel-logger";
 
-  if [ "$branch_name" != "HEAD" ]; then
-    # Create a new branch and switch to it
-    git checkout -b "chore/merge-${branch_name}-template"
+const logs = new Logs(
+  "info", // log level
+  {
+    client: supabaseClient, // Optionally pass a client
+    supabaseUrl: "https://...", // Required if client is not passed
+    supabaseKey: "key...", // Required if client is not passed
+  },
+  "start-stop-command", // name of plugin or kernel
+  ["error", "fatal"] // log levels to post to supabase
+);
 
-    # Merge the changes from the template remote
-    git merge template/development --allow-unrelated-histories
-
-    # Switch back to the original branch
-    git checkout "$branch_name"
-
-    # Push the changes to the original remote
-    git push "$original_remote" HEAD:"$branch_name"
-  else
-    echo "You are in a detached HEAD state. Please checkout a branch first."
-  fi
-
-  # Remove the template remote
-  # git remote remove template
-}
+logs.info("Hello, world!"); // not posted to supabase
+logs.error("Something went wrong!"); // posted to supabase
 ```
