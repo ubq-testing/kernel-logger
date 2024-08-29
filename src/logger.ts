@@ -2,16 +2,28 @@ import { Logs as Logger, LogLevel, LogReturn, Metadata } from "@ubiquity-dao/ubi
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { UBIQUIBOT_LOGGER_VERSION, HAS_NEW_MAJOR_VERSION } from "./logger-version";
 
+type SupabaseInit = {
+  supabaseUrl?: string;
+  supabaseKey?: string;
+  client?: SupabaseClient;
+};
+
 export class Logs extends Logger {
   private _supabase: SupabaseClient;
   pluginName: string;
 
-  constructor(level: LogLevel, supabaseUrl: string, supabaseKey: string, pluginName: string, levelsToLog: LogLevel[] = ["fatal"]) {
+  constructor(level: LogLevel, supabaseConfig: SupabaseInit, pluginName: string, levelsToLog: LogLevel[] = ["fatal"]) {
     super(level);
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Supabase credentials not found");
+
+    if (supabaseConfig.client) {
+      this._supabase = supabaseConfig.client;
+    } else {
+      if (!supabaseConfig.supabaseUrl || !supabaseConfig.supabaseKey) {
+        throw new Error("Supabase credentials not found");
+      }
+      this._supabase = createClient(supabaseConfig.supabaseUrl, supabaseConfig.supabaseKey);
     }
-    this._supabase = createClient(supabaseUrl, supabaseKey);
+
     this.pluginName = pluginName;
 
     // Return a proxy and intercept calls for posting to Supabase
