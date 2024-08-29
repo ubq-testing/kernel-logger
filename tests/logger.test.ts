@@ -6,11 +6,16 @@ jest.mock("@supabase/supabase-js", () => {
   };
 });
 
+const supabaseConfig = {
+  supabaseUrl: "supabaseUrl",
+  supabaseKey: "supabaseKey",
+};
+
 describe("Logs", () => {
   let logs: Logs;
 
   beforeEach(() => {
-    logs = new Logs("info", "supabaseUrl", "supabaseKey", "pluginName");
+    logs = new Logs("info", supabaseConfig, "pluginName");
   });
 
   it("should create an instance of Logs", () => {
@@ -19,7 +24,14 @@ describe("Logs", () => {
 
   it("should throw an error if Supabase credentials are not provided", () => {
     expect(() => {
-      new Logs("info", "", "", "pluginName");
+      new Logs(
+        "info",
+        {
+          supabaseKey: "",
+          supabaseUrl: "",
+        },
+        "pluginName"
+      );
     }).toThrow("Supabase credentials not found");
   });
 
@@ -37,7 +49,7 @@ describe("Logs", () => {
   });
 
   it("should log to Supabase on any defined levels", () => {
-    logs = new Logs("info", "supabaseUrl", "supabaseKey", "pluginName", ["info", "debug", "verbose", "error"]);
+    logs = new Logs("info", supabaseConfig, "pluginName", ["info", "debug", "verbose", "error"]);
     const logMessage = "Test log message";
     const metadata = { key: "value" };
 
