@@ -21,7 +21,7 @@ export class Logs extends Logger {
 
         // we auto-update patch and minor versions
         if (HAS_NEW_MAJOR_VERSION) {
-          this.info("Major version update available", { latestVersion: UBIQUIBOT_LOGGER_VERSION });
+          target.info("Major version update available", { latestVersion: UBIQUIBOT_LOGGER_VERSION });
         }
 
         // Intercept the log methods which are in the levelsToLog array
@@ -30,7 +30,7 @@ export class Logs extends Logger {
             // Call the original method
             const result: LogReturn = origMethod.apply(target, [msg, metadata]);
             // Log to Supabase
-            target._logToSupabase(result).catch(console.error);
+            this._logToSupabase(result).catch(console.error);
             return result;
           };
         }
@@ -41,14 +41,21 @@ export class Logs extends Logger {
   }
 
   private async _logToSupabase(log: LogReturn) {
-    const { data, error } = await this._supabase.from("logs").insert([
-      {
-        log: log.logMessage.raw,
-        level: log.logMessage.level,
-        metadata: { ...log.metadata, caller: this.pluginName },
-      },
-    ]);
-    // both are null if successful
-    return error || data;
+    try {
+      const { data, error } = await this._supabase.from("logs").insert([
+        {
+          log: log.logMessage.raw,
+          level: log.logMessage.level,
+          metadata: { ...log.metadata, caller: this.pluginName },
+        },
+      ]);
+      if (error) {
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      console.error("Error logging to Supabase:", err);
+      throw err;
+    }
   }
 }
