@@ -1,8 +1,11 @@
 {
-  "name": "ts-template",
+  "name": "@ubiquity-os/logger",
   "version": "1.0.0",
-  "description": "Template repository with TypeScript support.",
-  "main": "build/index.ts",
+  "description": "An extension of the Ubiquibot Logger with Supabase integration",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.mjs",
+  "type": "module",
   "author": "Ubiquity DAO",
   "license": "MIT",
   "engines": {
