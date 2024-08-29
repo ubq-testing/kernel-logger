@@ -6,10 +6,15 @@ import { exec } from "child_process";
 
 const LOGGER = "@ubiquity-dao/ubiquibot-logger";
 
+/**
+ * Check if there are updates for the logger package
+ * and update the logger version in the project.
+ */
+
 async function updateLogger() {
   const packageFile = "package.json";
   const packageJson = JSON.parse(fs.readFileSync(packageFile, "utf-8"));
-  const currentVersion = packageJson.dependencies[LOGGER]
+  const currentVersion = packageJson.dependencies[LOGGER];
 
   if (!currentVersion) {
     console.error(`Package ${LOGGER} is not listed in dependencies.`);
@@ -40,13 +45,14 @@ async function updateLogger() {
   }
 
   const codeParts = [`export const UBIQUIBOT_LOGGER_VERSION = "${latestVersion}";\n`];
-  let shouldUpdate = false;
+
   if (semver.major(latestVersion) > semver.major(currentVersion)) {
     console.warn(`Warning: Major version update available for ${LOGGER} (${currentVersion} -> ${latestVersion}).`);
-    codeParts.push(`export const HAS_NEW_MAJOR_VERSION = true;\n`);
+    codeParts.push(createHasNewVariable(true));
   } else if (semver.minor(latestVersion) > semver.minor(currentVersion) || semver.patch(latestVersion) > semver.patch(currentVersion)) {
     console.log(`Updating ${LOGGER} from version ${currentVersion} to ${latestVersion}.`);
-    codeParts.push(`export const HAS_NEW_MAJOR_VERSION = false;\n`);
+    codeParts.push(createHasNewVariable(false));
+
     await run({
       packageFile: packageFile,
       upgrade: true,
@@ -54,20 +60,20 @@ async function updateLogger() {
       filter: `/${LOGGER}/`,
     });
 
-    shouldUpdate = true;
+    handleInstall().catch(console.error);
   } else {
     console.log(`No updates found for ${LOGGER}.`);
-    codeParts.push(`export const HAS_NEW_MAJOR_VERSION = false;\n`);
+    codeParts.push(createHasNewVariable(false));
   }
 
   const code = codeParts.join("");
   await writeFile("src/logger-version.ts", code);
-
-  if (shouldUpdate) {
-    handleInstall();
-  }
 }
 
+function createHasNewVariable(hasNewMajorVersion: boolean) {
+  return `// eslint-disable-next-line @typescript-eslint/naming-convention
+export const HAS_NEW_MAJOR_VERSION = ${hasNewMajorVersion};`;
+}
 async function handleInstall() {
   let manager = "yarn";
 
@@ -82,16 +88,21 @@ async function handleInstall() {
     manager = "bun";
   }
 
-  if (manager === "yarn") {
-    exec("yarn install");
-  } else if (manager === "npm") {
-    exec("npm install");
-  } else if (manager === "pnpm") {
-    exec("pnpm install");
-  } else if (manager === "bun") {
-    exec("bun install");
-  } else {
-    console.error("No lockfile found. Please run `yarn install` or `npm install`.");
+  switch (manager) {
+    case "yarn":
+      exec("yarn install");
+      break;
+    case "npm":
+      exec("npm install");
+      break;
+    case "pnpm":
+      exec("pnpm install");
+      break;
+    case "bun":
+      exec("bun install");
+      break;
+    default:
+      return;
   }
 }
 
